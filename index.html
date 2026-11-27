@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Yordamchi</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1d2a;--mut:#6b7086;--pr:#5b5bf0;--bd:#e3e5ef;--me:#5b5bf0;--ai:#eef0fa}
+[data-theme=dark]{--bg:#12131c;--card:#1b1d2a;--tx:#eceefa;--mut:#9aa0ba;--bd:#2c2f42;--ai:#242739}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx);height:100dvh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--bd)}
+header h1{font-size:18px;margin:0;flex:1}
+button{font:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:8px 12px}
+button.p{background:var(--pr);color:#fff;border-color:var(--pr)}
+main{flex:1;display:flex;min-height:0}
+aside{width:230px;background:var(--card);border-right:1px solid var(--bd);padding:10px;overflow:auto}
+aside .it{padding:8px;border-radius:8px;cursor:pointer;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+aside .it:hover,aside .it.on{background:var(--ai)}
+section{flex:1;display:flex;flex-direction:column;min-width:0}
+#msgs{flex:1;overflow:auto;padding:14px}
+.m{max-width:85%;padding:10px 13px;border-radius:14px;margin:6px 0;white-space:pre-wrap;line-height:1.45}
+.m.me{background:var(--me);color:#fff;margin-left:auto}.m.ai{background:var(--ai)}
+.feats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}
+.feats button{text-align:left;padding:12px}
+form{display:flex;gap:8px;padding:10px;background:var(--card);border-top:1px solid var(--bd)}
+input[type=text]{flex:1;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
+dialog{border:1px solid var(--bd);border-radius:14px;background:var(--card);color:var(--tx)}
+@media(max-width:700px){aside{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🤖 AI Yordamchi</h1>
+  <button id="newc">➕ Yangi</button>
+  <button id="prof">👤 Profil</button>
+  <button id="theme">🌙</button>
+</header>
+<main>
+  <aside><b>Suhbatlar tarixi</b><div id="hist"></div></aside>
+  <section>
+    <div id="msgs"></div>
+    <form id="f">
+      <button type="button" id="mic" title="Ovoz">🎤</button>
+      <input type="text" id="q" placeholder="Savolingizni yozing..." autocomplete="off">
+      <button class="p">Yuborish</button>
+    </form>
+  </section>
+</main>
+<dialog id="pd"><form method="dialog">
+  <h3>Foydalanuvchi profili</h3>
+  <input type="text" id="pname" placeholder="Ismingiz"><br><br>
+  <button class="p">Saqlash</button></form></dialog>
+<script>
+const FEATS=[
+["💬","Savollarga javob","Menga istalgan savolni bering"],
+["🌐","Tarjima","Quyidagi matnni o'zbekchaga tarjima qil: "],
+["📚","Uy vazifasi","Menga uy vazifasida yordam ber: "],
+["📝","Insho yozish","Quyidagi mavzuda insho yoz: "],
+["🧮","Matematika","Misolni bosqichma-bosqich yech: "],
+["💻","Kod yozish","Quyidagi dasturni yozib ber: "],
+["🧠","Test tuzish","Quyidagi mavzudan 10 ta test tuz: "],
+["🇰🇷","Koreys tili","Koreys tilidan dars ber. O'zbekcha tarjima va qisqa grammatika izohi bilan: "]];
+const $=s=>document.querySelector(s);
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const S=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+let chats=L("chats",[]),cur=null,user=L("user",{name:""});
+function theme(t){document.documentElement.dataset.theme=t;$("#theme").textContent=t=="dark"?"☀️":"🌙";S("theme",t)}
+theme(L("theme",matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"));
+$("#theme").onclick=()=>theme(document.documentElement.dataset.theme=="dark"?"light":"dark");
+$("#prof").onclick=()=>{$("#pname").value=user.name;$("#pd").showModal()};
+$("#pd").onclose=()=>{user.name=$("#pname").value;S("user",user);render()};
+function newChat(){cur={id:Date.now(),title:"Yangi suhbat",m:[]};chats.unshift(cur);S("chats",chats);render()}
+$("#newc").onclick=newChat;
+function render(){
+  $("#hist").innerHTML="";
+  chats.forEach(c=>{const d=document.createElement("div");d.className="it"+(c==cur?" on":"");d.textContent=c.title;d.onclick=()=>{cur=c;render()};$("#hist").append(d)});
+  const box=$("#msgs");box.innerHTML="";
+  if(!cur||!cur.m.length){
+    box.insertAdjacentHTML("beforeend",`<div class="m ai">Salom${user.name?", "+user.name:""}! Men AI Yordamchiman. Nima qilamiz?</div>`);
+    const g=document.createElement("div");g.className="feats";
+    FEATS.forEach(([i,t,p])=>{const b=document.createElement("button");b.innerHTML=i+" "+t;b.onclick=()=>{$("#q").value=p;$("#q").focus()};g.append(b)});
+    box.append(g);
+  }
+  (cur?.m||[]).forEach(x=>{const d=document.createElement("div");d.className="m "+(x.r=="user"?"me":"ai");d.textContent=x.c;box.append(d)});
+  box.scrollTop=box.scrollHeight;
+}
+$("#f").onsubmit=async e=>{
+  e.preventDefault();const t=$("#q").value.trim();if(!t)return;
+  if(!cur)newChat();
+  $("#q").value="";cur.m.push({r:"user",c:t});if(cur.title=="Yangi suhbat")cur.title=t.slice(0,30);
+  cur.m.push({r:"assistant",c:"..."});render();
+  try{
+    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({messages:cur.m.slice(0,-1).map(x=>({role:x.r,content:x.c}))})});
+    const j=await r.json();cur.m[cur.m.length-1].c=j.reply||j.error||"Xatolik";
+  }catch{cur.m[cur.m.length-1].c="Serverga ulanib bo'lmadi. server.js ishga tushirilganini tekshiring."}
+  S("chats",chats);render();
+};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$("#mic").onclick=()=>{if(!SR)return alert("Brauzer ovozni qo'llamaydi");const r=new SR();r.lang="uz-UZ";r.onresult=e=>{$("#q").value=e.results[0][0].transcript};r.start()};
+cur=chats[0]||null;render();
+</script>
+</body>
+</html>
